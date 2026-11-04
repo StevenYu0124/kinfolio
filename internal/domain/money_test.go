@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewMoney_ValidInput(t *testing.T) {
-	m, err := domain.NewMoney("10.5", "SGD")
+	m, err := domain.NewMoney("10.5", domain.SGD)
 	if err != nil {
 		t.Fatalf("NewMoney() error = %v, want nil", err)
 	}
@@ -18,7 +18,7 @@ func TestNewMoney_ValidInput(t *testing.T) {
 		t.Errorf("Amount() = %v, want %v", m.Amount(), wantAmount)
 	}
 
-	wantCurrency := "SGD"
+	wantCurrency := domain.SGD
 	if m.Currency() != wantCurrency {
 		t.Errorf("Currency() = %q, want %q", m.Currency(), wantCurrency)
 	}
@@ -28,11 +28,11 @@ func TestNewMoney_InvalidInput(t *testing.T) {
 	tests := []struct {
 		name     string
 		amount   string
-		currency string
+		currency domain.Currency
 	}{
-		{"non-numeric amount", "abc", "SGD"},
-		{"empty amount", "", "SGD"},
-		{"empty currency", "12.34", ""},
+		{"non-numeric amount", "abc", domain.SGD},
+		{"empty amount", "", domain.SGD},
+		{"unknown currency", "12.34", "ABC"},
 	}
 
 	for _, tt := range tests {

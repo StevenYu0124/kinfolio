@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/shopspring/decimal"
@@ -9,17 +8,17 @@ import (
 
 type Money struct {
 	amount   decimal.Decimal
-	currency string
+	currency Currency
 }
 
-func NewMoney(amount, currency string) (Money, error) {
-	if currency == "" {
-		return Money{}, errors.New("currency must not be empty")
+func NewMoney(amount string, currency Currency) (Money, error) {
+	if err := currency.validate(); err != nil {
+		return Money{}, fmt.Errorf("currency: %w", err)
 	}
 
 	a, err := decimal.NewFromString(amount)
 	if err != nil {
-		return Money{}, fmt.Errorf("invalid amount %q: %w", amount, err)
+		return Money{}, fmt.Errorf("amount %q: %w", amount, err)
 	}
 
 	return Money{amount: a, currency: currency}, nil
@@ -29,6 +28,6 @@ func (m Money) Amount() decimal.Decimal {
 	return m.amount
 }
 
-func (m Money) Currency() string {
+func (m Money) Currency() Currency {
 	return m.currency
 }

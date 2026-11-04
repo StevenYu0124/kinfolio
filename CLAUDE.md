@@ -33,16 +33,32 @@ when starting a new module.
 
 ## Progress & next session
 
-Done (2026-10-28): `internal/domain/money.go` with `NewMoney(amount, currency string) (Money, error)`,
-unexported fields, `Amount()`/`Currency()` getters; rejects non-numeric amount and empty currency.
-Tests: one happy-path test plus a table-driven `TestNewMoney_InvalidInput`.
+Done (2026-10-28): `internal/domain/money.go` with `NewMoney`, unexported fields, `Amount()`/`Currency()`
+getters; rejects non-numeric amount.
+
+Done (2026-11-05): `internal/domain/currency.go`, `type Currency string` with typed constants `SGD`, `HKD`
+(option A, chosen over `iota` and struct-based enums). `ParseCurrency(s string) (Currency, error)` for
+text input; unexported `(c Currency) validate()` holds the single list of supported codes.
+`NewMoney(amount string, currency Currency)` now takes the type and delegates to `validate()`.
+Decisions and conventions agreed this session:
+- Rules are tested once: currency rules in `currency_test.go`; `money_test.go` has one
+  "unknown currency" row that only proves delegation.
+- Untyped literals (`"XYZ"`, `""`) still convert to `Currency`, so runtime validation stays. Prefer
+  `domain.SGD` over `"SGD"` in code and tests; don't add tests for language behaviour.
+- Error wrapping: each layer prefixes *where* it is (`currency: %w`, `amount %q: %w`), lowercase,
+  no trailing punctuation, always `%w`.
+- API (signature) changes are done as one compiler-guided refactor, green → green; use parallel change
+  (expand → migrate → contract) once there are many callers.
 
 Next session, start with:
-1. **Currency as an enum-like type** (user's choice). Go has no `enum`; discuss options
-   (`type Currency string` + typed constants vs `int` + `iota`, plus a `ParseCurrency` factory) and
-   drive it with TDD. This likely replaces the empty-currency check and the open "`"  "` currency" question.
+1. **Sentinel errors** (user asked to explore and discuss further): e.g. `ErrUnknownCurrency`,
+   wrapped with `%w` and checked in tests with `errors.Is`, so the Money test can prove the error comes
+   from Currency. Compare with `errors.As` / custom error types (C# exception types as the analogy).
+2. **`Add`** (same currency → sum, different currency → error), per D-03, via TDD. Consider what `Add`
+   does with the zero value `Money{}` (currency `""`); a sentinel like `ErrCurrencyMismatch` may fit here.
 
 Smaller leftovers:
 - Commit at each green (habit to keep).
-- Doc comments on exported names: user asked Claude to write these once the API settles.
-- Then: `Add` (same currency → sum, different currency → error), per D-03.
+- `money_test.go`: `TestNewMoney_ValidInput`'s Fatalf message still prints `NewMoney()` without args.
+- Doc comments on exported names plus an `ExampleNewMoney` function: user asked Claude to write the doc
+  comments once the API settles; it's close to settled now.
