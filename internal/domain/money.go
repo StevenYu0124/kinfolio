@@ -7,7 +7,10 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var ErrInvalidAmount = errors.New("invalid amount")
+var (
+	ErrInvalidAmount    = errors.New("invalid amount")
+	ErrCurrencyMismatch = errors.New("currency mismatch")
+)
 
 type Money struct {
 	amount   decimal.Decimal
@@ -33,4 +36,11 @@ func (m Money) Amount() decimal.Decimal {
 
 func (m Money) Currency() Currency {
 	return m.currency
+}
+
+func (m Money) Add(other Money) (Money, error) {
+	if m.currency != other.currency {
+		return Money{}, fmt.Errorf("%w: %s and %s", ErrCurrencyMismatch, m.currency, other.currency)
+	}
+	return Money{amount: m.amount.Add(other.amount), currency: m.currency}, nil
 }

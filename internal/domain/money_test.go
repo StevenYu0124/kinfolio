@@ -47,3 +47,42 @@ func TestNewMoney_InvalidInput(t *testing.T) {
 		})
 	}
 }
+
+func TestMoney_Add(t *testing.T) {
+	currency := domain.SGD
+	money1 := mustMoney(t, "12", currency)
+	money2 := mustMoney(t, "23", currency)
+	sum, err := money1.Add(money2)
+	if err != nil {
+		t.Fatalf("%v.Add(%v) error = %v, want nil", money1.Amount(), money2.Amount(), err)
+	}
+
+	wantAmount := decimal.RequireFromString("35")
+	if !sum.Amount().Equal(wantAmount) {
+		t.Errorf("%v.Add(%v) Amount() = %v, want %v", money1.Amount(), money2.Amount(), sum.Amount(), wantAmount)
+	}
+
+	wantCurrency := currency
+	if sum.Currency() != wantCurrency {
+		t.Errorf("%v.Add(%v) Currency() = %q, want %q", money1.Currency(), money2.Currency(), sum.Currency(), wantCurrency)
+	}
+}
+
+func TestMoney_Add_CurrencyMismatch(t *testing.T) {
+	money1 := mustMoney(t, "12", domain.SGD)
+	money2 := mustMoney(t, "23", domain.HKD)
+	_, err := money1.Add(money2)
+	wantErr := domain.ErrCurrencyMismatch
+	if !errors.Is(err, wantErr) {
+		t.Errorf("%v.Add(%v) error = %v, want %v", money1.Currency(), money2.Currency(), err, wantErr)
+	}
+}
+
+func mustMoney(t *testing.T, amount string, c domain.Currency) domain.Money {
+	t.Helper()
+	m, err := domain.NewMoney(amount, c)
+	if err != nil {
+		t.Fatalf("NewMoney(%q, %q) error = %v, want nil", amount, c, err)
+	}
+	return m
+}

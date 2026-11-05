@@ -42,3 +42,14 @@ testdata/              anonymised sample statements
 ```
 
 `internal/` is enforced by the Go compiler: these packages cannot be imported from outside the module.
+
+## D-07 Money zero value: not valid, not guarded
+- `Money{}` (currency `""`) is not a valid `Money`; always create one with `NewMoney`. This is
+  stated in the doc comment, not enforced in code (YAGNI).
+- Go can't hide a struct's zero value (like `default(T)` for a C# struct). `Money{}` can still
+  appear through ignored errors, uninitialised struct fields or `var m Money`.
+- Current behaviour is accepted: `Money{}.Add(x)` with a real currency returns
+  `ErrCurrencyMismatch`, so it fails loudly. `Money{}.Add(Money{})` returns `Money{}` without
+  error; this is harmless and deliberately **not** pinned by a test.
+- Revisit when summing is needed (e.g. `var total Money` in a loop): add a constructor such as
+  `Zero(currency)` or a `Sum(currency, ...Money)` function, driven by that real use.
