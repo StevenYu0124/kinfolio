@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/StevenYu0124/kinfolio/internal/domain"
@@ -37,11 +38,12 @@ func TestParseCurrency_InvalidCode(t *testing.T) {
 		{"unknown code", "ABC"},
 	}
 
+	wantErr := domain.ErrUnknownCurrency
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := domain.ParseCurrency(tt.input)
-			if err == nil {
-				t.Errorf("ParseCurrency(%q) error = nil, want an error", tt.input)
+			if !errors.Is(err, wantErr) {
+				t.Errorf("ParseCurrency(%q) error = %v, want %v", tt.input, err, wantErr)
 			}
 		})
 	}

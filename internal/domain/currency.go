@@ -1,6 +1,9 @@
 package domain
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type Currency string
 
@@ -8,6 +11,8 @@ const (
 	SGD Currency = "SGD"
 	HKD Currency = "HKD"
 )
+
+var ErrUnknownCurrency = errors.New("unknown currency")
 
 func ParseCurrency(s string) (Currency, error) {
 	c := Currency(s)
@@ -22,6 +27,6 @@ func (c Currency) validate() error {
 	case SGD, HKD:
 		return nil
 	default:
-		return fmt.Errorf("unknown currency %q", c)
+		return fmt.Errorf("%w %q", ErrUnknownCurrency, c)
 	}
 }
