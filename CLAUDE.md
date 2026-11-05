@@ -67,11 +67,28 @@ Error conventions (supersede the earlier "each layer prefixes where it is, alway
 - `errors.As` / custom error types (≈ C# `catch (SomeException ex)`) only when a caller needs data
   from the error; sentinels (≈ a shared well-known instance) are enough so far.
 
+Done (2026-11-05/06): `(m Money) Add(other Money) (Money, error)`, value receiver, builds the struct
+directly (no round trip through `NewMoney`). Different currencies → `ErrCurrencyMismatch`, message
+`currency mismatch: SGD and HKD`. Zero value `Money{}` is documented as invalid but not guarded (D-07).
+`(m Money) String()` (`fmt.Stringer`) → `"12 SGD"`, amount as `decimal` prints it (no padding; display
+formatting belongs in `report`). Claude wrote doc comments on all exported names, `doc.go` (package
+comment) and `example_test.go` (`ExampleNewMoney`, `ExampleMoney_Add`, `ExampleParseCurrency`).
+Conventions agreed:
+- Test setup uses the helper `mustMoney(t, amount, currency)` with `t.Helper()`; never drop setup errors.
+- Method tests are named `TestType_Method[_Case]` (e.g. `TestMoney_Add_CurrencyMismatch`).
+- Failure messages print `Money` values with `%v` (uses `String()`), e.g. `12 SGD.Add(23 SGD) ...`. In
+  `TestMoney_String` itself, print the raw inputs instead (formatting the value would be circular).
+- Inside `String()`, format the fields, never the receiver (infinite recursion).
+- Table-driven tests have a `name` column used in `t.Run(tt.name, ...)`; use `got`/`want`.
+- A test that is green from the start is fine when it documents a decision (e.g. "trailing zero dropped").
+- Examples don't print third-party error text in `// Output:` (it would pin `decimal`'s messages).
+- Run tests with `./` paths (`go test ./internal/domain`, `go test ./...`); `internal/domain` alone is
+  treated as a standard-library path. `(cached)` means unchanged since a passing run; `-count=1` forces.
+
 Next session, start with:
-1. **`Add`** (same currency → sum, different currency → error), per D-03, via TDD. Consider what `Add`
-   does with the zero value `Money{}` (currency `""`); a sentinel like `ErrCurrencyMismatch` may fit here.
+1. Decide what comes next in the domain (e.g. `Sub`/`Neg`, or `Owner`/`Transaction` per D-06), or a
+   summing helper (`Zero(currency)` / `Sum`) if a real use appears (D-07).
 
 Smaller leftovers:
-- Commit at each green (habit to keep; this session piled up several cycles uncommitted).
-- Doc comments on exported names (now incl. the two sentinels) plus an `ExampleNewMoney` function:
-  user asked Claude to write them once the API settles; it's close to settled now.
+- Commit at each green, *before* starting the next red (still slipping: two cycles piled up again).
+- Examples use `a, _ := domain.NewMoney(...)` for brevity; the user may want them to check errors.
