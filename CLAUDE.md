@@ -45,20 +45,33 @@ Decisions and conventions agreed this session:
   "unknown currency" row that only proves delegation.
 - Untyped literals (`"XYZ"`, `""`) still convert to `Currency`, so runtime validation stays. Prefer
   `domain.SGD` over `"SGD"` in code and tests; don't add tests for language behaviour.
-- Error wrapping: each layer prefixes *where* it is (`currency: %w`, `amount %q: %w`), lowercase,
-  no trailing punctuation, always `%w`.
 - API (signature) changes are done as one compiler-guided refactor, green → green; use parallel change
   (expand → migrate → contract) once there are many callers.
 
+Done (2026-11-05, second session): sentinel errors. `ErrUnknownCurrency` (`currency.go`, returned by
+`validate()`) and `ErrInvalidAmount` (`money.go`, returned by `NewMoney`). Tests assert with `errors.Is`;
+`TestNewMoney_InvalidInput` has a `wantErr` column (a real sentinel on every row, never `nil` = "any
+error"). `NewMoney` returns `validate()`'s error unwrapped. Test failure messages show the call's
+arguments, taken from locals/table fields so they can't drift from the call.
+
+Error conventions (supersede the earlier "each layer prefixes where it is, always `%w`"):
+- Callers distinguish errors by **sentinel identity** (`errors.Is`), never by message text. Tests don't
+  pin message text.
+- Sentinels: `var ErrXxx = errors.New("...")`, lowercase, no trailing punctuation, name the *kind*.
+  "unknown" = well-formed but unsupported; "invalid" = malformed.
+- Message shape: `"%w %q"` → `<sentinel> "<input>"`; add `": %v"` for a lower-level cause
+  (`invalid amount "abc": can't convert abc to decimal`).
+- `%w` only for errors callers may depend on (own sentinels, own layers); `%v` for third-party
+  implementation details (e.g. `decimal`'s errors) so they don't become part of the API.
+- Add a prefix only when it adds context the inner error lacks; otherwise return `err` as is.
+- `errors.As` / custom error types (≈ C# `catch (SomeException ex)`) only when a caller needs data
+  from the error; sentinels (≈ a shared well-known instance) are enough so far.
+
 Next session, start with:
-1. **Sentinel errors** (user asked to explore and discuss further): e.g. `ErrUnknownCurrency`,
-   wrapped with `%w` and checked in tests with `errors.Is`, so the Money test can prove the error comes
-   from Currency. Compare with `errors.As` / custom error types (C# exception types as the analogy).
-2. **`Add`** (same currency → sum, different currency → error), per D-03, via TDD. Consider what `Add`
+1. **`Add`** (same currency → sum, different currency → error), per D-03, via TDD. Consider what `Add`
    does with the zero value `Money{}` (currency `""`); a sentinel like `ErrCurrencyMismatch` may fit here.
 
 Smaller leftovers:
-- Commit at each green (habit to keep).
-- `money_test.go`: `TestNewMoney_ValidInput`'s Fatalf message still prints `NewMoney()` without args.
-- Doc comments on exported names plus an `ExampleNewMoney` function: user asked Claude to write the doc
-  comments once the API settles; it's close to settled now.
+- Commit at each green (habit to keep; this session piled up several cycles uncommitted).
+- Doc comments on exported names (now incl. the two sentinels) plus an `ExampleNewMoney` function:
+  user asked Claude to write them once the API settles; it's close to settled now.
