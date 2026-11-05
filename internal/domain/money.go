@@ -44,3 +44,7 @@ func (m Money) Add(other Money) (Money, error) {
 	}
 	return Money{amount: m.amount.Add(other.amount), currency: m.currency}, nil
 }
+
+func (m Money) String() string {
+	return fmt.Sprintf("%s %s", m.amount, m.currency)
+}

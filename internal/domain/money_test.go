@@ -54,17 +54,17 @@ func TestMoney_Add(t *testing.T) {
 	money2 := mustMoney(t, "23", currency)
 	sum, err := money1.Add(money2)
 	if err != nil {
-		t.Fatalf("%v.Add(%v) error = %v, want nil", money1.Amount(), money2.Amount(), err)
+		t.Fatalf("%v.Add(%v) error = %v, want nil", money1, money2, err)
 	}
 
 	wantAmount := decimal.RequireFromString("35")
 	if !sum.Amount().Equal(wantAmount) {
-		t.Errorf("%v.Add(%v) Amount() = %v, want %v", money1.Amount(), money2.Amount(), sum.Amount(), wantAmount)
+		t.Errorf("%v.Add(%v) Amount() = %v, want %v", money1, money2, sum.Amount(), wantAmount)
 	}
 
 	wantCurrency := currency
 	if sum.Currency() != wantCurrency {
-		t.Errorf("%v.Add(%v) Currency() = %q, want %q", money1.Currency(), money2.Currency(), sum.Currency(), wantCurrency)
+		t.Errorf("%v.Add(%v) Currency() = %q, want %q", money1, money2, sum.Currency(), wantCurrency)
 	}
 }
 
@@ -74,7 +74,28 @@ func TestMoney_Add_CurrencyMismatch(t *testing.T) {
 	_, err := money1.Add(money2)
 	wantErr := domain.ErrCurrencyMismatch
 	if !errors.Is(err, wantErr) {
-		t.Errorf("%v.Add(%v) error = %v, want %v", money1.Currency(), money2.Currency(), err, wantErr)
+		t.Errorf("%v.Add(%v) error = %v, want %v", money1, money2, err, wantErr)
+	}
+}
+
+func TestMoney_String(t *testing.T) {
+	tests := []struct {
+		name     string
+		amount   string
+		currency domain.Currency
+		want     string
+	}{
+		{"whole number", "12", domain.SGD, "12 SGD"},
+		{"trailing zero dropped", "11.50", domain.HKD, "11.5 HKD"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mustMoney(t, tt.amount, tt.currency).String()
+			if got != tt.want {
+				t.Errorf("NewMoney(%q, %q).String() = %q, want %q", tt.amount, tt.currency, got, tt.want)
+			}
+		})
 	}
 }
 
