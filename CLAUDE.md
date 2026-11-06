@@ -12,8 +12,6 @@ See `docs/use-cases.md` and `docs/decisions.md`.
     may be run without asking, e.g. to check a red/green state while reviewing.
   - Exception: Claude may `git commit` without asking (e.g. at a green, or after doc edits).
     Commit messages follow the existing style: short, imperative (`Add Money.Add with ...`).
-  - Exception: Claude may write and edit `example_test.go` files (godoc `ExampleXxx` functions)
-    without asking. Other `_test.go` files and production code stay the user's to write.
 - Documentation (files under `docs/`, this file) may be written and edited freely.
 - When explaining Go concepts, relate them to C# equivalents where helpful.
 
