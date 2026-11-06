@@ -35,30 +35,23 @@ when starting a new module.
   `go test ./...`. Relate to xUnit/NUnit (`[Theory]`/`[InlineData]`) where helpful.
 - Claude may run `go test` without asking (see the exception under "Working agreement").
 
-## Progress & next session
+## Conventions
 
-Done (2026-10-28): `internal/domain/money.go` with `NewMoney`, unexported fields, `Amount()`/`Currency()`
-getters; rejects non-numeric amount.
+Agreed while building `internal/domain`. Progress lives in the git log; this section keeps the
+*why*/*how* that commit messages don't.
 
-Done (2026-11-05): `internal/domain/currency.go`, `type Currency string` with typed constants `SGD`, `HKD`
-(option A, chosen over `iota` and struct-based enums). `ParseCurrency(s string) (Currency, error)` for
-text input; unexported `(c Currency) validate()` holds the single list of supported codes.
-`NewMoney(amount string, currency Currency)` now takes the type and delegates to `validate()`.
-Decisions and conventions agreed this session:
-- Rules are tested once: currency rules in `currency_test.go`; `money_test.go` has one
-  "unknown currency" row that only proves delegation.
-- Untyped literals (`"XYZ"`, `""`) still convert to `Currency`, so runtime validation stays. Prefer
-  `domain.SGD` over `"SGD"` in code and tests; don't add tests for language behaviour.
+Design:
+- `Currency` is `type Currency string` with typed constants (`SGD`, `HKD`), chosen over `iota` and
+  struct-based enums. `ParseCurrency` is for text input; unexported `validate()` holds the single list
+  of supported codes. Untyped literals (`"XYZ"`) still convert to `Currency`, so runtime validation
+  stays. Prefer `domain.SGD` over `"SGD"` in code and tests.
+- Methods on `Money` use value receivers and build the struct directly (no round trip through
+  `NewMoney`). `String()` → `"12 SGD"`, amount as `decimal` prints it; display formatting belongs in
+  `report`. Inside `String()`, format the fields, never the receiver (infinite recursion).
 - API (signature) changes are done as one compiler-guided refactor, green → green; use parallel change
   (expand → migrate → contract) once there are many callers.
 
-Done (2026-11-05, second session): sentinel errors. `ErrUnknownCurrency` (`currency.go`, returned by
-`validate()`) and `ErrInvalidAmount` (`money.go`, returned by `NewMoney`). Tests assert with `errors.Is`;
-`TestNewMoney_InvalidInput` has a `wantErr` column (a real sentinel on every row, never `nil` = "any
-error"). `NewMoney` returns `validate()`'s error unwrapped. Test failure messages show the call's
-arguments, taken from locals/table fields so they can't drift from the call.
-
-Error conventions (supersede the earlier "each layer prefixes where it is, always `%w`"):
+Errors:
 - Callers distinguish errors by **sentinel identity** (`errors.Is`), never by message text. Tests don't
   pin message text.
 - Sentinels: `var ErrXxx = errors.New("...")`, lowercase, no trailing punctuation, name the *kind*.
@@ -71,28 +64,29 @@ Error conventions (supersede the earlier "each layer prefixes where it is, alway
 - `errors.As` / custom error types (≈ C# `catch (SomeException ex)`) only when a caller needs data
   from the error; sentinels (≈ a shared well-known instance) are enough so far.
 
-Done (2026-11-05/06): `(m Money) Add(other Money) (Money, error)`, value receiver, builds the struct
-directly (no round trip through `NewMoney`). Different currencies → `ErrCurrencyMismatch`, message
-`currency mismatch: SGD and HKD`. Zero value `Money{}` is documented as invalid but not guarded (D-07).
-`(m Money) String()` (`fmt.Stringer`) → `"12 SGD"`, amount as `decimal` prints it (no padding; display
-formatting belongs in `report`). Claude wrote doc comments on all exported names, `doc.go` (package
-comment) and `example_test.go` (`ExampleNewMoney`, `ExampleMoney_Add`, `ExampleParseCurrency`).
-Conventions agreed:
-- Test setup uses the helper `mustMoney(t, amount, currency)` with `t.Helper()`; never drop setup errors.
-- Method tests are named `TestType_Method[_Case]` (e.g. `TestMoney_Add_CurrencyMismatch`).
-- Failure messages print `Money` values with `%v` (uses `String()`), e.g. `12 SGD.Add(23 SGD) ...`. In
-  `TestMoney_String` itself, print the raw inputs instead (formatting the value would be circular).
-- Inside `String()`, format the fields, never the receiver (infinite recursion).
+Tests:
+- Rules are tested once, where they live (currency rules in `currency_test.go`); callers get one row
+  that only proves delegation. Don't add tests for language behaviour.
+- Error tests assert with `errors.Is` against a `wantErr` column holding a real sentinel on every row
+  (never `nil` = "any error").
 - Table-driven tests have a `name` column used in `t.Run(tt.name, ...)`; use `got`/`want`.
+- Method tests are named `TestType_Method[_Case]` (e.g. `TestMoney_Add_CurrencyMismatch`).
+- Test setup uses the helper `mustMoney(t, amount, currency)` with `t.Helper()`; never drop setup errors.
+- Failure messages show the call's arguments, taken from locals/table fields so they can't drift from
+  the call. Print `Money` with `%v` (`12 SGD.Add(23 SGD) ...`); in `TestMoney_String` itself, print the
+  raw inputs instead (formatting the value would be circular).
 - A test that is green from the start is fine when it documents a decision (e.g. "trailing zero dropped").
 - Examples don't print third-party error text in `// Output:` (it would pin `decimal`'s messages).
 - Run tests with `./` paths (`go test ./internal/domain`, `go test ./...`); `internal/domain` alone is
   treated as a standard-library path. `(cached)` means unchanged since a passing run; `-count=1` forces.
 
-Next session, start with:
+## Next session
+
+Start with:
 1. Decide what comes next in the domain (e.g. `Sub`/`Neg`, or `Owner`/`Transaction` per D-06), or a
    summing helper (`Zero(currency)` / `Sum`) if a real use appears (D-07).
 
 Smaller leftovers:
 - Commit at each green, *before* starting the next red (still slipping: two cycles piled up again).
-- Examples use `a, _ := domain.NewMoney(...)` for brevity; the user may want them to check errors.
+- Examples use `a, _ := domain.NewMoney(...)` for brevity; the user may want them to check errors
+  (a good first example for the user to write).
