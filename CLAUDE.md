@@ -68,3 +68,5 @@ Tests:
 Start with:
 1. Decide what comes next in the domain (e.g. `Sub`/`Neg`, or `Owner`/`Transaction` per D-06/D-08),
    or a summing helper (`Zero(currency)` / `Sum`) if a real use appears (D-07).
+2. Record D-12 in `docs/decisions.md`: examples only for core domain types (internal app, no external
+   readers); no exported `MustMoney` until a package-level literal needs one (Go `Must` convention).
