@@ -8,6 +8,10 @@ See `docs/use-cases.md` and `docs/decisions.md`.
 - This is a learning project: the user is learning Go (background: C#, prefers OOP and clean code).
 - **Do not write or edit code, and do not run commands**, unless the user explicitly asks for help
   with a specific task. Explain, review, suggest and point to docs instead.
+  - Exception: `go test` (any package or flags, e.g. `go test ./...`, `-run`, `-v`, `-count=1`)
+    may be run without asking, e.g. to check a red/green state while reviewing.
+  - Exception: Claude may `git commit` without asking (e.g. at a green, or after doc edits).
+    Commit messages follow the existing style: short, imperative (`Add Money.Add with ...`).
 - Documentation (files under `docs/`, this file) may be written and edited freely.
 - When explaining Go concepts, relate them to C# equivalents where helpful.
 
@@ -29,7 +33,7 @@ when starting a new module.
 - Go testing conventions: tests live in `xxx_test.go` beside the code, use the standard
   `testing` package, prefer table-driven tests with `t.Run` subtests, and run with
   `go test ./...`. Relate to xUnit/NUnit (`[Theory]`/`[InlineData]`) where helpful.
-- Running `go test` is still a command: only run it when the user asks.
+- Claude may run `go test` without asking (see the exception under "Working agreement").
 
 ## Progress & next session
 
