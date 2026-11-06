@@ -18,11 +18,9 @@
 - Amounts always carry a currency (`Money{Amount, Currency}`); mixing currencies without
   an explicit FX conversion is an error.
 
-## D-04 Modelling without classes
-- Importers: one `Importer` interface; Moomoo, Tiger and DBS each implement it.
-- Transaction kinds (trade, dividend, fee, interest, transfer, option event): an interface
-  plus a type switch. Go does not check that a switch covers every kind, so add tests
-  to make sure each kind is handled.
+## D-04 Importers: one `Importer` interface, one implementation per source (proposed)
+- Moomoo, Tiger and DBS each implement `Importer`, in their own package (see D-06).
+- Adding a source means adding a package; the rest of the app only sees the interface.
 
 ## D-05 Application type: CLI
 - A single command-line binary, `kinfolio`.
@@ -53,3 +51,18 @@ testdata/              anonymised sample statements
   error; this is harmless and deliberately **not** pinned by a test.
 - Revisit when summing is needed (e.g. `var total Money` in a loop): add a constructor such as
   `Zero(currency)` or a `Sum(currency, ...Money)` function, driven by that real use.
+
+## D-08 Transaction kinds: interface + type switch (proposed)
+- Kinds: trade, dividend, fee, interest, transfer, option event. Each is its own struct; all
+  satisfy a `Transaction` interface. Code that handles them (e.g. `ledger`) uses a type switch,
+  like C# pattern matching (`switch (tx) { case Trade t: ... }`).
+- Why: keeps per-kind logic in the package that owns it (`ledger`, `report`), so `domain` holds
+  data only and does not depend on them.
+- Alternatives considered:
+  - One struct with a `Kind` field and optional fields: simple and close to CSV rows, but most
+    fields are empty for most kinds and nothing stops invalid combinations.
+  - Interface with behaviour (e.g. `Apply(l *Ledger)` per kind, like C# virtual methods): the
+    compiler forces every kind to implement it, but ledger logic moves into `domain` and
+    `domain` depends on `ledger`.
+- Cost: Go does not check that a switch covers every kind, so add tests to make sure each
+  kind is handled.
