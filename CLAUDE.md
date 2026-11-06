@@ -68,7 +68,3 @@ Tests:
 Start with:
 1. Decide what comes next in the domain (e.g. `Sub`/`Neg`, or `Owner`/`Transaction` per D-06/D-08),
    or a summing helper (`Zero(currency)` / `Sum`) if a real use appears (D-07).
-
-Leftovers:
-- Examples use `a, _ := domain.NewMoney(...)` for brevity; rewrite them to check errors
-  (a good first example for the user to write).

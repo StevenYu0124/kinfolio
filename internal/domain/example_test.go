@@ -17,16 +17,36 @@ func ExampleNewMoney() {
 }
 
 func ExampleMoney_Add() {
-	a, _ := domain.NewMoney("10.50", domain.SGD)
-	b, _ := domain.NewMoney("2.25", domain.SGD)
-	sum, err := a.Add(b)
-	fmt.Println(sum, err)
+	a, err := domain.NewMoney("10.50", domain.SGD)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	c, _ := domain.NewMoney("5", domain.HKD)
+	b, err := domain.NewMoney("2.25", domain.SGD)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	sum, err := a.Add(b)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(sum)
+
+	c, err := domain.NewMoney("5", domain.HKD)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	_, err = a.Add(c)
 	fmt.Println(err)
+
 	// Output:
-	// 12.75 SGD <nil>
+	// 12.75 SGD
 	// currency mismatch: SGD and HKD
 }
 
