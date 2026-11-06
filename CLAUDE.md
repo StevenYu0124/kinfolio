@@ -34,35 +34,18 @@ when starting a new module.
   `testing` package, prefer table-driven tests with `t.Run` subtests, and run with
   `go test ./...`. Relate to xUnit/NUnit (`[Theory]`/`[InlineData]`) where helpful.
 - Claude may run `go test` without asking (see the exception under "Working agreement").
+- Commit at each green, *before* starting the next red (Claude may do the commit).
 
 ## Conventions
 
-Agreed while building `internal/domain`. Progress lives in the git log; this section keeps the
-*why*/*how* that commit messages don't.
+How code and tests are written here. Design decisions live in `docs/decisions.md` (Currency D-09,
+Money D-10, errors D-11); progress lives in the git log.
 
-Design:
-- `Currency` is `type Currency string` with typed constants (`SGD`, `HKD`), chosen over `iota` and
-  struct-based enums. `ParseCurrency` is for text input; unexported `validate()` holds the single list
-  of supported codes. Untyped literals (`"XYZ"`) still convert to `Currency`, so runtime validation
-  stays. Prefer `domain.SGD` over `"SGD"` in code and tests.
-- Methods on `Money` use value receivers and build the struct directly (no round trip through
-  `NewMoney`). `String()` → `"12 SGD"`, amount as `decimal` prints it; display formatting belongs in
-  `report`. Inside `String()`, format the fields, never the receiver (infinite recursion).
+Code:
+- Prefer `domain.SGD` over `"SGD"` in code and tests.
+- Inside `String()`, format the fields, never the receiver (infinite recursion).
 - API (signature) changes are done as one compiler-guided refactor, green → green; use parallel change
   (expand → migrate → contract) once there are many callers.
-
-Errors:
-- Callers distinguish errors by **sentinel identity** (`errors.Is`), never by message text. Tests don't
-  pin message text.
-- Sentinels: `var ErrXxx = errors.New("...")`, lowercase, no trailing punctuation, name the *kind*.
-  "unknown" = well-formed but unsupported; "invalid" = malformed.
-- Message shape: `"%w %q"` → `<sentinel> "<input>"`; add `": %v"` for a lower-level cause
-  (`invalid amount "abc": can't convert abc to decimal`).
-- `%w` only for errors callers may depend on (own sentinels, own layers); `%v` for third-party
-  implementation details (e.g. `decimal`'s errors) so they don't become part of the API.
-- Add a prefix only when it adds context the inner error lacks; otherwise return `err` as is.
-- `errors.As` / custom error types (≈ C# `catch (SomeException ex)`) only when a caller needs data
-  from the error; sentinels (≈ a shared well-known instance) are enough so far.
 
 Tests:
 - Rules are tested once, where they live (currency rules in `currency_test.go`); callers get one row
@@ -83,10 +66,9 @@ Tests:
 ## Next session
 
 Start with:
-1. Decide what comes next in the domain (e.g. `Sub`/`Neg`, or `Owner`/`Transaction` per D-06), or a
-   summing helper (`Zero(currency)` / `Sum`) if a real use appears (D-07).
+1. Decide what comes next in the domain (e.g. `Sub`/`Neg`, or `Owner`/`Transaction` per D-06/D-08),
+   or a summing helper (`Zero(currency)` / `Sum`) if a real use appears (D-07).
 
-Smaller leftovers:
-- Commit at each green, *before* starting the next red (still slipping: two cycles piled up again).
-- Examples use `a, _ := domain.NewMoney(...)` for brevity; the user may want them to check errors
+Leftovers:
+- Examples use `a, _ := domain.NewMoney(...)` for brevity; rewrite them to check errors
   (a good first example for the user to write).

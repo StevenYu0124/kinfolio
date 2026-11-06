@@ -66,3 +66,31 @@ testdata/              anonymised sample statements
     `domain` depends on `ledger`.
 - Cost: Go does not check that a switch covers every kind, so add tests to make sure each
   kind is handled.
+
+## D-09 Currency: `type Currency string` with typed constants
+- `type Currency string` with constants `SGD`, `HKD`; codes read and print as themselves.
+- Alternatives considered: `iota` integer enum (needs a lookup table to/from text), struct-based
+  enum (unexported field, closest to a closed C# enum class, but more code).
+- Untyped literals (`"XYZ"`, `""`) still convert to `Currency`, so values are validated at runtime
+  (`ParseCurrency` for text input, `NewMoney` for constructed values).
+
+## D-10 Money is an immutable value type
+- Methods use value receivers and return a new `Money` (like a C# `readonly struct`).
+- Methods that combine valid `Money` values build the result directly, not via `NewMoney`: the
+  inputs are already valid.
+- `String()` (`"12 SGD"`) is for logs, errors and test messages; amount as `decimal` prints it.
+  Display formatting (padding, thousands separators) belongs in `report`.
+
+## D-11 Errors: sentinel errors, matched with `errors.Is`
+- Callers distinguish errors by **sentinel identity** (`errors.Is`), never by message text. Tests
+  don't pin message text.
+- Sentinels: `var ErrXxx = errors.New("...")`, lowercase, no trailing punctuation, name the *kind*.
+  "unknown" = well-formed but unsupported; "invalid" = malformed.
+- Message shape: `"%w %q"` → `<sentinel> "<input>"`; add `": %v"` for a lower-level cause
+  (`invalid amount "abc": can't convert abc to decimal`).
+- `%w` only for errors callers may depend on (own sentinels, own layers); `%v` for third-party
+  implementation details (e.g. `decimal`'s errors) so they don't become part of the API.
+- Add a prefix only when it adds context the inner error lacks; otherwise return `err` as is.
+- Custom error types with `errors.As` (≈ C# `catch (SomeException ex)`) only when a caller needs
+  data from the error; sentinels (≈ a shared well-known instance) are enough so far.
+- Supersedes an earlier idea: "each layer prefixes where it is, always `%w`".
