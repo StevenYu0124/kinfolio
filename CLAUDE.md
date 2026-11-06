@@ -66,7 +66,15 @@ Tests:
 ## Next session
 
 Start with:
-1. Decide what comes next in the domain (e.g. `Sub`/`Neg`, or `Owner`/`Transaction` per D-06/D-08),
-   or a summing helper (`Zero(currency)` / `Sum`) if a real use appears (D-07).
+1. **Import a DBS consolidated statement (exploratory, no TDD).** The user's choice: this is I/O and
+   DBS-format heavy, so prototype first and add tests only once there is a working prototype, to
+   cover corner cases and scenarios it missed (likely integration tests on anonymised samples).
+   - Begin by verifying D-02: run `pdftotext -layout` on a real DBS PDF (needs `brew install poppler`)
+     and look at the text before designing the parser.
+   - Real statements hold personal data: keep them out of git; only anonymised samples go in `testdata/`.
+   - Expect first contact with D-04 (`Importer`, `TextExtractor`) and D-06 (`internal/importer/dbs`).
 2. Record D-12 in `docs/decisions.md`: examples only for core domain types (internal app, no external
    readers); no exported `MustMoney` until a package-level literal needs one (Go `Must` convention).
+
+Later: what comes next in the domain (`Sub`/`Neg`, `Owner`/`Transaction` per D-06/D-08), or a summing
+helper (`Zero(currency)` / `Sum`) if a real use appears (D-07).
